@@ -1,0 +1,7 @@
+END USER LICENSE AGREEMENT
+
+Copyright (c) 2025 SimpleApp
+
+This software is provided "as is", without warranty of any kind, express or implied.
+
+By installing this software, you agree to the terms and conditions set forth in this agreement.
