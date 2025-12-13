@@ -20,10 +20,7 @@
 ; Variables for requirement status
 Var Dialog
 Var ReqListBox
-Var DockerStatus
 Var NodeStatus
-Var JavaStatus
-Var PythonStatus
 Var StatusLabel
 
 ; Variables for System Requirements (Hardware/OS)
@@ -48,48 +45,21 @@ Function CheckRequirementsPage
   ; Create ListBox for results
   ${NSD_CreateListBox} 0 20u 100% 70u ""
   Pop $ReqListBox
-  
-  ; Check Docker
-  !insertmacro CheckRequirement "Docker" "docker --version" $DockerStatus
-  ${If} $DockerStatus == "1"
-    SendMessage $ReqListBox ${LB_ADDSTRING} 0 "STR:Docker: Installed"
-  ${Else}
-    SendMessage $ReqListBox ${LB_ADDSTRING} 0 "STR:Docker: Missing"
-  ${EndIf}
-  
-  ; Check Node.js
+
+  ; Check Node.js only
   !insertmacro CheckRequirement "Node.js" "node --version" $NodeStatus
   ${If} $NodeStatus == "1"
     SendMessage $ReqListBox ${LB_ADDSTRING} 0 "STR:Node.js: Installed"
   ${Else}
     SendMessage $ReqListBox ${LB_ADDSTRING} 0 "STR:Node.js: Missing"
   ${EndIf}
-  
-  ; Check Java
-  !insertmacro CheckRequirement "Java" "java -version" $JavaStatus
-  ${If} $JavaStatus == "1"
-    SendMessage $ReqListBox ${LB_ADDSTRING} 0 "STR:Java: Installed"
-  ${Else}
-    SendMessage $ReqListBox ${LB_ADDSTRING} 0 "STR:Java: Missing"
-  ${EndIf}
-  
-  ; Check Python
-  !insertmacro CheckRequirement "Python" "python --version" $PythonStatus
-  ${If} $PythonStatus == "1"
-    SendMessage $ReqListBox ${LB_ADDSTRING} 0 "STR:Python: Installed"
-  ${Else}
-    SendMessage $ReqListBox ${LB_ADDSTRING} 0 "STR:Python: Missing"
-  ${EndIf}
-  
+
   ; Status message
-  ${If} $DockerStatus == "1"
-  ${AndIf} $NodeStatus == "1"
-  ${AndIf} $JavaStatus == "1"
-  ${AndIf} $PythonStatus == "1"
-    ${NSD_CreateLabel} 0 95u 100% 24u "All requirements are satisfied!$\nYou can proceed with the installation."
+  ${If} $NodeStatus == "1"
+    ${NSD_CreateLabel} 0 95u 100% 24u "Node.js is installed. You can proceed with the installation."
     Pop $StatusLabel
   ${Else}
-    ${NSD_CreateLabel} 0 95u 100% 40u "Some requirements are missing!$\nPlease install the missing components above."
+    ${NSD_CreateLabel} 0 95u 100% 40u "Node.js is missing!$\nPlease install Node.js and run the installer again."
     Pop $StatusLabel
   ${EndIf}
   
@@ -97,12 +67,9 @@ Function CheckRequirementsPage
 FunctionEnd
 
 Function CheckRequirementsPageLeave
-  ; Check if all requirements are met before proceeding
-  ${If} $DockerStatus != "1"
-  ${OrIf} $NodeStatus != "1"
-  ${OrIf} $JavaStatus != "1"
-  ${OrIf} $PythonStatus != "1"
-    MessageBox MB_ICONSTOP|MB_OK "Cannot proceed with installation.$\n$\nPlease install all missing requirements and run the installer again."
+  ; Check if Node.js is installed before proceeding
+  ${If} $NodeStatus != "1"
+    MessageBox MB_ICONSTOP|MB_OK "Node.js is required to proceed.$\n$\nPlease install Node.js and run the installer again."
     Abort
   ${EndIf}
 FunctionEnd
