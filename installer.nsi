@@ -159,15 +159,12 @@ FunctionEnd
 
 Name "GigBim Labs"
 OutFile "GigBimLabs-Setup.exe"
-InstallDir "$PROGRAMFILES\GigBimLabs"
+InstallDir "C:\Users\micro\AppData\Roaming\Autodesk\Revit\Addins\2024"
 RequestExecutionLevel admin
 
 ; Pages
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE "license.txt"
-Page custom CheckSysReqPage CheckSysReqPageLeave
-Page custom CheckRequirementsPage CheckRequirementsPageLeave
-!insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 !insertmacro MUI_UNPAGE_CONFIRM
@@ -178,32 +175,27 @@ Page custom CheckRequirementsPage CheckRequirementsPageLeave
 
 Section "Install"
   SetOutPath "$INSTDIR"
-  ; Copy all files from the app folder (place your files in installer\app)
+  ; Copy all files from the data folder (place your files in installer\data)
   File /nonfatal /r "app\*.*"
 
-  ; Create Start Menu shortcut
-  CreateDirectory "$SMPROGRAMS\GigBimLabs"
-  CreateShortCut "$SMPROGRAMS\GigBimLabs\GigBimLabs.lnk" "$INSTDIR\GigBimLabs.exe" "" "$INSTDIR\GigBimLabs.exe" 0
-
-  ; Write uninstall
+  ; Write uninstaller and minimal ARP entries
   WriteUninstaller "$INSTDIR\Uninstall.exe"
-
-  ; Register uninstall info (for Add/Remove Programs)
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs" "DisplayName" "GigBim Labs"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs" "DisplayName" "GigBim Labs Add-in"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs" "UninstallString" "$INSTDIR\Uninstall.exe"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs" "DisplayIcon" "$INSTDIR\GigBimLabs.exe"
 SectionEnd
 
 Section "Uninstall"
-  ; Remove Start Menu shortcut and folder
-  Delete "$SMPROGRAMS\GigBimLabs\GigBimLabs.lnk"
-  RMDir "$SMPROGRAMS\GigBimLabs"
+  ; Do not remove the entire Addins folder; only remove our files
+  ; Remove Start Menu shortcut and folder (not created)
+  ; Delete "$SMPROGRAMS\GigBimLabs\GigBimLabs.lnk"
+  ; RMDir "$SMPROGRAMS\GigBimLabs"
 
   ; Remove installed files
-  Delete "$INSTDIR\GigBimLabs.exe"
-  ; Delete other files (wildcard)
+  ; Delete a known main file if applicable, otherwise rely on wildcard
+  ; Delete "$INSTDIR\GigBimLabs.exe"
   Delete "$INSTDIR\*.*"
-  RMDir /r "$INSTDIR"
+  ; Do not remove the whole addins directory to avoid deleting other add-ins
+  ; RMDir /r "$INSTDIR"
 
   ; Remove uninstall registry keys
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs"
