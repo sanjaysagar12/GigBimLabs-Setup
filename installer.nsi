@@ -21,7 +21,7 @@
 Var Dialog
 Var ReqListBox
 Var DockerStatus
-Var GoStatus
+Var NodeStatus
 Var JavaStatus
 Var PythonStatus
 Var StatusLabel
@@ -57,12 +57,12 @@ Function CheckRequirementsPage
     SendMessage $ReqListBox ${LB_ADDSTRING} 0 "STR:Docker: Missing"
   ${EndIf}
   
-  ; Check Go
-  !insertmacro CheckRequirement "Go" "go version" $GoStatus
-  ${If} $GoStatus == "1"
-    SendMessage $ReqListBox ${LB_ADDSTRING} 0 "STR:Go (Golang): Installed"
+  ; Check Node.js
+  !insertmacro CheckRequirement "Node.js" "node --version" $NodeStatus
+  ${If} $NodeStatus == "1"
+    SendMessage $ReqListBox ${LB_ADDSTRING} 0 "STR:Node.js: Installed"
   ${Else}
-    SendMessage $ReqListBox ${LB_ADDSTRING} 0 "STR:Go (Golang): Missing"
+    SendMessage $ReqListBox ${LB_ADDSTRING} 0 "STR:Node.js: Missing"
   ${EndIf}
   
   ; Check Java
@@ -83,7 +83,7 @@ Function CheckRequirementsPage
   
   ; Status message
   ${If} $DockerStatus == "1"
-  ${AndIf} $GoStatus == "1"
+  ${AndIf} $NodeStatus == "1"
   ${AndIf} $JavaStatus == "1"
   ${AndIf} $PythonStatus == "1"
     ${NSD_CreateLabel} 0 95u 100% 24u "All requirements are satisfied!$\nYou can proceed with the installation."
@@ -99,7 +99,7 @@ FunctionEnd
 Function CheckRequirementsPageLeave
   ; Check if all requirements are met before proceeding
   ${If} $DockerStatus != "1"
-  ${OrIf} $GoStatus != "1"
+  ${OrIf} $NodeStatus != "1"
   ${OrIf} $JavaStatus != "1"
   ${OrIf} $PythonStatus != "1"
     MessageBox MB_ICONSTOP|MB_OK "Cannot proceed with installation.$\n$\nPlease install all missing requirements and run the installer again."
