@@ -159,12 +159,15 @@ FunctionEnd
 
 Name "GigBim Labs"
 OutFile "GigBimLabs-Setup.exe"
-InstallDir "C:\Users\micro\AppData\Roaming\Autodesk\Revit\Addins\2024"
+; Use dynamic default under current user's AppData\Roaming
+InstallDir "$APPDATA\Autodesk\Revit\Addins\2024"
 RequestExecutionLevel admin
 
 ; Pages
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE "license.txt"
+; Allow user to change install directory
+!insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 !insertmacro MUI_UNPAGE_CONFIRM
@@ -176,9 +179,9 @@ RequestExecutionLevel admin
 Section "Install"
   SetOutPath "$INSTDIR"
   ; Copy all files from the data folder (place your files in installer\data)
-  File /nonfatal /r "app\*.*"
+  ; Previously copied from app; ensure we use data here
+  File /nonfatal /r "data\*.*"
 
-  ; Write uninstaller and minimal ARP entries
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs" "DisplayName" "GigBim Labs Add-in"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs" "UninstallString" "$INSTDIR\Uninstall.exe"
