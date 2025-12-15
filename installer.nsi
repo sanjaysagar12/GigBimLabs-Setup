@@ -127,7 +127,7 @@ FunctionEnd
 Name "GigBim Labs"
 OutFile "GigBimLabs-Setup.exe"
 ; Use dynamic default under current user's AppData\Roaming
-InstallDir "$APPDATA\Autodesk\Revit\Addins\2024"
+InstallDir "$APPDATA\Autodesk\Revit\Addins\2024\revit_ai_plugin"
 RequestExecutionLevel admin
 
 ; Pages
@@ -145,9 +145,8 @@ RequestExecutionLevel admin
 
 Section "Install"
   SetOutPath "$INSTDIR"
-  ; Copy all files from the data folder (place your files in installer\data)
-  ; Previously copied from app; ensure we use data here
-  File /nonfatal /r "data\*.*"
+  ; Copy all files from the app folder
+  File /r "app\*.*"
 
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs" "DisplayName" "GigBim Labs Add-in"
@@ -164,8 +163,8 @@ Section "Uninstall"
   ; Delete a known main file if applicable, otherwise rely on wildcard
   ; Delete "$INSTDIR\GigBimLabs.exe"
   Delete "$INSTDIR\*.*"
-  ; Do not remove the whole addins directory to avoid deleting other add-ins
-  ; RMDir /r "$INSTDIR"
+  ; Remove the installation directory (which we created as a subfolder)
+  RMDir /r "$INSTDIR"
 
   ; Remove uninstall registry keys
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs"
