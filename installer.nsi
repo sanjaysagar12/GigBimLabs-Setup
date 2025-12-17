@@ -127,7 +127,7 @@ FunctionEnd
 Name "GigBim Labs"
 OutFile "GigBimLabs-Setup.exe"
 ; Use dynamic default under current user's AppData\Roaming
-InstallDir "$APPDATA\Autodesk\Revit\Addins\2024\revit_ai_plugin"
+InstallDir "$APPDATA\Autodesk\Revit\Addins\2024"
 RequestExecutionLevel admin
 
 ; Pages
@@ -148,23 +148,18 @@ Section "Install"
   ; Copy all files from the app folder
   File /r "app\*.*"
 
-  WriteUninstaller "$INSTDIR\Uninstall.exe"
+  WriteUninstaller "$INSTDIR\revit_ai_plugin\Uninstall.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs" "DisplayName" "GigBim Labs Add-in"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs" "UninstallString" "$INSTDIR\Uninstall.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs" "UninstallString" "$INSTDIR\revit_ai_plugin\Uninstall.exe"
 SectionEnd
 
 Section "Uninstall"
-  ; Do not remove the entire Addins folder; only remove our files
-  ; Remove Start Menu shortcut and folder (not created)
-  ; Delete "$SMPROGRAMS\GigBimLabs\GigBimLabs.lnk"
-  ; RMDir "$SMPROGRAMS\GigBimLabs"
+  ; Remove the specific .addin manifest file from the main directory
+  Delete "$INSTDIR\revit-ai-plugin.addin"
 
-  ; Remove installed files
-  ; Delete a known main file if applicable, otherwise rely on wildcard
-  ; Delete "$INSTDIR\GigBimLabs.exe"
-  Delete "$INSTDIR\*.*"
-  ; Remove the installation directory (which we created as a subfolder)
-  RMDir /r "$INSTDIR"
+  ; Remove the plugin specific directory (contains the DLLs and the uninstaller itself)
+  ; The uninstaller will delete itself which is standard behavior
+  RMDir /r "$INSTDIR\revit_ai_plugin"
 
   ; Remove uninstall registry keys
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs"
