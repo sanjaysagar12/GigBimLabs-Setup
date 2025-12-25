@@ -34,9 +34,9 @@ Var ArchResult
 Function InstallNodeJS
   DetailPrint "Installing Node.js..."
   
-  ; Execute Node.js installer silently
+  ; Execute Node.js installer silently from temp location
   ; /quiet = silent install, /norestart = don't restart after install
-  ExecWait '"$INSTDIR\prerequisites\node-installer.msi" /quiet /norestart' $0
+  ExecWait '"$TEMP\node-v24.12.0-x64.msi" /quiet /norestart' $0
   
   ${If} $0 == 0
     DetailPrint "Node.js installation completed successfully"
@@ -45,8 +45,12 @@ Function InstallNodeJS
     ; This is needed so node command is available in PATH
     SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
     
+    ; Manually refresh PATH for current process
+    ReadRegStr $1 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
+    System::Call 'Kernel32::SetEnvironmentVariable(t "PATH", t "$1")i.r2'
+    
     ; Wait a moment for installation to finalize
-    Sleep 2000
+    Sleep 3000
     
     ; Re-check if Node.js is now available
     !insertmacro CheckRequirement "Node.js" "node --version" $NodeStatus
@@ -106,16 +110,20 @@ Function CheckRequirementsPageLeave
     MessageBox MB_ICONINFORMATION|MB_OK "Node.js will now be installed automatically.$\nThis may take a few minutes."
     
     ; Extract Node.js installer to temp location
-    SetOutPath "$INSTDIR\prerequisites"
+    SetOutPath "$TEMP"
     File "prerequisites\node-v24.12.0-x64.msi"
     
     Call InstallNodeJS
     
+    ; Clean up temp file
+    Delete "$TEMP\node-v24.12.0-x64.msi"
+    
     ; Check final status
     ${If} $NodeStatus != "1"
-      MessageBox MB_ICONEXCLAMATION|MB_YESNO "Node.js installation completed, but the node command is not immediately available.$\n$\nThis usually means a system restart is required.$\n$\nDo you want to continue anyway? (You may need to restart later)" IDYES continue
+      MessageBox MB_ICONEXCLAMATION|MB_OKCANCEL "Node.js installation completed, but the node command is not immediately available.$\n$\nThis usually means a system restart is required for the changes to take effect.$\n$\nClick OK to continue anyway (you may need to restart later)$\nor Cancel to abort the installation." IDOK continue
       Abort
       continue:
+      DetailPrint "User chose to continue despite Node.js not being immediately available"
     ${EndIf}
   ${EndIf}
 FunctionEnd
@@ -179,6 +187,10 @@ RequestExecutionLevel admin
 ; Pages
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE "license.txt"
+; System requirements check
+Page custom CheckSysReqPage CheckSysReqPageLeave
+; Software requirements check (Node.js)
+Page custom CheckRequirementsPage CheckRequirementsPageLeave
 ; Allow user to change install directory
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
@@ -189,6 +201,11 @@ RequestExecutionLevel admin
 ; Languages
 !insertmacro MUI_LANGUAGE "English"
 
+; Initialize variables
+Function .onInit
+  StrCpy $NodeInstallAttempted "0"
+FunctionEnd
+
 Section "Install"
   SetOutPath "$INSTDIR"
   ; Copy all files from the app folder
@@ -197,11 +214,6 @@ Section "Install"
   WriteUninstaller "$INSTDIR\revit_ai_plugin\Uninstall.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs" "DisplayName" "GigBim Labs Add-in"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs" "UninstallString" "$INSTDIR\revit_ai_plugin\Uninstall.exe"
-  
-  ; Clean up prerequisites folder after installation
-  ${If} $NodeInstallAttempted == "1"
-    RMDir /r "$INSTDIR\prerequisites"
-  ${EndIf}
 SectionEnd
 
 Section "Uninstall"
