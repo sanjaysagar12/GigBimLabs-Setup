@@ -34,9 +34,9 @@ Var ArchResult
 Function InstallNodeJS
   DetailPrint "Installing Node.js..."
   
-  ; Execute Node.js installer silently from temp location
-  ; /quiet = silent install, /norestart = don't restart after install
-  ExecWait '"$TEMP\node-v24.12.0-x64.msi" /quiet /norestart' $0
+  ; Execute Node.js installer with basic UI showing progress
+  ; /qb = basic UI with progress bar, /norestart = don't restart after install
+  ExecWait 'msiexec.exe /i "$TEMP\node-v24.12.0-x64.msi" /qb /norestart' $0
   
   ${If} $0 == 0
     DetailPrint "Node.js installation completed successfully"
@@ -182,6 +182,7 @@ Name "GigBim Labs"
 OutFile "GigBimLabs-Setup.exe"
 ; Use dynamic default under current user's AppData\Roaming
 InstallDir "$APPDATA\Autodesk\Revit\Addins\2024"
+InstallDirRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs" "InstallLocation"
 RequestExecutionLevel admin
 
 ; Pages
@@ -214,16 +215,40 @@ Section "Install"
   WriteUninstaller "$INSTDIR\revit_ai_plugin\Uninstall.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs" "DisplayName" "GigBim Labs Add-in"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs" "UninstallString" "$INSTDIR\revit_ai_plugin\Uninstall.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs" "InstallLocation" "$INSTDIR"
 SectionEnd
 
+Function un.onInit
+  ; Read the install location from registry
+  ReadRegStr $INSTDIR HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs" "InstallLocation"
+  
+  ; If not found in registry, use default
+  ${If} $INSTDIR == ""
+    StrCpy $INSTDIR "$APPDATA\Autodesk\Revit\Addins\2024"
+  ${EndIf}
+  
+  DetailPrint "Uninstalling from: $INSTDIR"
+FunctionEnd
+
 Section "Uninstall"
+  DetailPrint "Starting uninstallation..."
+  DetailPrint "Install directory: $INSTDIR"
+  
   ; Remove the specific .addin manifest file from the main directory
+  DetailPrint "Removing .addin file..."
   Delete "$INSTDIR\revit-ai-plugin.addin"
 
   ; Remove the plugin specific directory (contains the DLLs and the uninstaller itself)
-  ; The uninstaller will delete itself which is standard behavior
+  DetailPrint "Removing plugin directory..."
   RMDir /r "$INSTDIR\revit_ai_plugin"
+  
+  ; Remove RevitCommandSet directory if it exists
+  DetailPrint "Removing RevitCommandSet directory..."
+  RMDir /r "$INSTDIR\RevitCommandSet"
 
   ; Remove uninstall registry keys
+  DetailPrint "Removing registry keys..."
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs"
+  
+  DetailPrint "Uninstallation complete."
 SectionEnd
