@@ -22,12 +22,44 @@ Var Dialog
 Var ReqListBox
 Var NodeStatus
 Var StatusLabel
+Var NodeInstallAttempted
 
 ; Variables for System Requirements (Hardware/OS)
 Var SysReqDialog
 Var SysReqLabel
 Var OSResult
 Var ArchResult
+
+; Function to install Node.js silently
+Function InstallNodeJS
+  DetailPrint "Installing Node.js..."
+  
+  ; Execute Node.js installer silently
+  ; /quiet = silent install, /norestart = don't restart after install
+  ExecWait '"$INSTDIR\prerequisites\node-installer.msi" /quiet /norestart' $0
+  
+  ${If} $0 == 0
+    DetailPrint "Node.js installation completed successfully"
+    
+    ; Refresh environment variables
+    ; This is needed so node command is available in PATH
+    SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
+    
+    ; Wait a moment for installation to finalize
+    Sleep 2000
+    
+    ; Re-check if Node.js is now available
+    !insertmacro CheckRequirement "Node.js" "node --version" $NodeStatus
+    
+    ${If} $NodeStatus == "1"
+      DetailPrint "Node.js verified successfully"
+    ${Else}
+      DetailPrint "Warning: Node.js installed but not immediately available. May require system restart."
+    ${EndIf}
+  ${Else}
+    DetailPrint "Node.js installation failed with error code: $0"
+  ${EndIf}
+FunctionEnd
 
 ; Function to check requirements and show custom page
 Function CheckRequirementsPage
@@ -51,7 +83,7 @@ Function CheckRequirementsPage
   ${If} $NodeStatus == "1"
     SendMessage $ReqListBox ${LB_ADDSTRING} 0 "STR:Node.js: Installed"
   ${Else}
-    SendMessage $ReqListBox ${LB_ADDSTRING} 0 "STR:Node.js: Missing"
+    SendMessage $ReqListBox ${LB_ADDSTRING} 0 "STR:Node.js: Missing (will be installed automatically)"
   ${EndIf}
 
   ; Status message
@@ -59,7 +91,7 @@ Function CheckRequirementsPage
     ${NSD_CreateLabel} 0 95u 100% 24u "Node.js is installed. You can proceed with the installation."
     Pop $StatusLabel
   ${Else}
-    ${NSD_CreateLabel} 0 95u 100% 40u "Node.js is missing!$\nPlease install Node.js and run the installer again."
+    ${NSD_CreateLabel} 0 95u 100% 40u "Node.js is not installed.$\nThe installer will automatically install Node.js for you."
     Pop $StatusLabel
   ${EndIf}
   
@@ -67,10 +99,24 @@ Function CheckRequirementsPage
 FunctionEnd
 
 Function CheckRequirementsPageLeave
-  ; Check if Node.js is installed before proceeding
+  ; If Node.js is not installed, install it now
   ${If} $NodeStatus != "1"
-    MessageBox MB_ICONSTOP|MB_OK "Node.js is required to proceed.$\n$\nPlease install Node.js and run the installer again."
-    Abort
+    StrCpy $NodeInstallAttempted "1"
+    
+    MessageBox MB_ICONINFORMATION|MB_OK "Node.js will now be installed automatically.$\nThis may take a few minutes."
+    
+    ; Extract Node.js installer to temp location
+    SetOutPath "$INSTDIR\prerequisites"
+    File "prerequisites\node-v24.12.0-x64.msi"
+    
+    Call InstallNodeJS
+    
+    ; Check final status
+    ${If} $NodeStatus != "1"
+      MessageBox MB_ICONEXCLAMATION|MB_YESNO "Node.js installation completed, but the node command is not immediately available.$\n$\nThis usually means a system restart is required.$\n$\nDo you want to continue anyway? (You may need to restart later)" IDYES continue
+      Abort
+      continue:
+    ${EndIf}
   ${EndIf}
 FunctionEnd
 
@@ -151,6 +197,11 @@ Section "Install"
   WriteUninstaller "$INSTDIR\revit_ai_plugin\Uninstall.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs" "DisplayName" "GigBim Labs Add-in"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GigBimLabs" "UninstallString" "$INSTDIR\revit_ai_plugin\Uninstall.exe"
+  
+  ; Clean up prerequisites folder after installation
+  ${If} $NodeInstallAttempted == "1"
+    RMDir /r "$INSTDIR\prerequisites"
+  ${EndIf}
 SectionEnd
 
 Section "Uninstall"
